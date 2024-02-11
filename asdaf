@@ -1,63 +1,63 @@
 from kivy.app import App
-from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
-from kivy.uix.widget import Widget
-from kivy.graphics import Color, Rectangle
-from kivy.metrics import dp
+from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import Clock
 from phue import Bridge
 
-class LampControlApp(App):
+class HueControlApp(App):
     def build(self):
-        self.bridge = Bridge('95.49.57.121')  # Zastąp tym adresem IP swoim adresem mostka
+        self.title = 'Hue Control App'
+        self.bridge = Bridge('95.49.57.121')
 
-        layout = BoxLayout(orientation='vertical')
-
-        # Tło
-        background = Widget()
-        with background.canvas.before:
-            Color(0.2, 0, 0, 1)  # Ciemnoczerwone tło
-            Rectangle(pos=background.pos, size=background.size)
-
-        layout.add_widget(background)
-
-        # Etykieta "loveSender"
-        label_love_sender = Label(
-            text="loveSender",
-            color=(1, 1, 1, 1),
-            font_size=dp(30),
-            size_hint_y=None
-        )
-        layout.add_widget(label_love_sender)
-
-        # Etykieta z licznikiem kliknięć
-        self.licznik_klikniec = 0
-        self.label_licznik = Label(
-            text=f"Liczba kliknięć: {self.licznik_klikniec}",
-            color=(1, 1, 1, 1),
-            size_hint_y=None
-        )
+        layout = BoxLayout(orientation='vertical', spacing=10, padding=10)
+        
+        self.label_licznik = Label(text="Liczba kliknięć: 0")
         layout.add_widget(self.label_licznik)
 
-        # Przycisk "ZAWIADOM KAMIL"
-        przycisk = Button(
-            text="ZAWIADOM KAMIL",
-            background_color=(0.8, 0, 0, 1),  # Jasnoczerwony kolor przycisku
-            size_hint=(0.5, 0.1)  # Rozmiar przycisku
-        )
-        przycisk.bind(on_press=self.obsluz_klikniecie)
-        layout.add_widget(przycisk)
-
-        # Zmiana koloru tła całego okna
-        with self.root.canvas.before:
-            Color(0.2, 0, 0, 1)  # Ciemnoczerwone tło
-            Rectangle(pos=self.root.pos, size=self.root.size)
+        button = Button(text="Kliknij mnie")
+        button.bind(on_press=self.obsluz_klikniecie)
+        layout.add_widget(button)
 
         return layout
 
     def obsluz_klikniecie(self, instance):
-        # reszta kodu bez zmian
+        if not hasattr(self, 'last_click_time'):
+            self.last_click_time = 0
 
-if __name__ == "__main__":
-    LampControlApp().run()
+        current_time = Clock.get_time()
+        elapsed_time = current_time - self.last_click_time
+
+        if elapsed_time > 2:
+            self.last_click_time = current_time
+
+            self.licznik_klikniec += 1
+            self.label_licznik.text = f"Liczba kliknięć: {self.licznik_klikniec}"
+            self.zapisz_licznik()
+
+            self.bridge.set_light(1, 'on', True)
+            self.bridge.set_light(1, 'hue', 0)
+            self.bridge.set_light(1, 'sat', 254)
+
+            self.timer_start()
+
+    def timer_start(self):
+        Clock.schedule_once(self.zakoncz_akcje, 2)
+
+    def zakoncz_akcje(self, dt):
+        self.bridge.set_light(1, 'on', False)
+
+    def zapisz_licznik(self):
+        with open("licznik.txt", "w") as file:
+            file.write(str(self.licznik_klikniec))
+
+    def wczytaj_licznik(self):
+        try:
+            with open("licznik.txt", "r") as file:
+                self.licznik_klikniec = int(file.read())
+                self.label_licznik.text = f"Liczba kliknięć: {self.licznik_klikniec}"
+        except FileNotFoundError:
+            pass
+
+if __name__ == '__main__':
+    HueControlApp().run()
