@@ -1,0 +1,64 @@
+from kivy.clock import Clock
+from kivy.app import App
+from kivy.uix.relativelayout import RelativeLayout
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+from kivy.graphics import Color, Rectangle
+from kivy.metrics import dp
+from phue import Bridge
+from kivy.config import Config
+from kivy.core.window import Window
+
+# Ustawienia dla systemu macOS
+Config.set('graphics', 'width', '500')  # Dostosuj szerokość okna
+Config.set('graphics', 'height', '500')  # Dostosuj wysokość okna
+
+class LampControlApp(App):
+    def build(self):
+        self.bridge = Bridge('95.49.57.121')  # Zastąp tym adresem IP swoim adresem mostka
+
+        layout = RelativeLayout()
+        background = BackgroundWidget()  # Nowy widget do obsługi tła
+        layout.add_widget(background)
+
+        # Dodanie etykiety "loveSender" nad przyciskiem
+        label_love_sender = Label(
+            text="loveSender",
+            color=(1, 1, 1, 1),
+            font_size=dp(30),
+            pos_hint={'center_x': 0.5, 'center_y': 0.9},  # Umiejscowienie na środku
+            size_hint_y=None
+        )
+        layout.add_widget(label_love_sender)
+
+        self.licznik_klikniec = 0
+        self.label_licznik = Label(
+            text=f"Liczba kliknięć: {self.licznik_klikniec}",
+            color=(1, 1, 1, 1),
+            pos_hint={'center_x': 0.5, 'center_y': 0.75},  # Umiejscowienie na środku
+            size_hint_y=None
+        )
+
+        przycisk = RoundedButton(
+            text="ZAWIADOM KAMIL",
+            background_color=(0.8, 0, 0, 1),  # Jasnoczerwony kolor przycisku
+            size_hint=(0.5, 0.1),  # Rozmiar przycisku
+            pos_hint={'center_x': 0.5, 'center_y': 0.6}  # Umiejscowienie na środku
+        )
+        przycisk.bind(on_press=self.obsluz_klikniecie)
+
+        layout.add_widget(przycisk)
+        layout.add_widget(self.label_licznik)
+
+        self.wczytaj_licznik()
+
+        # Zmiana koloru tła całego okna (teraz po utworzeniu widżetów)
+        Window.clearcolor = (0.2, 0, 0, 1)  # Ciemnoczerwone tło
+
+        return layout
+
+    def obsluz_klikniecie(self, instance):
+        # reszta kodu bez zmian
+
+if __name__ == "__main__":
+    LampControlApp().run()
